@@ -17,7 +17,7 @@ print_version() {
 print_help() {
     print_version $PROGNAME $VERSION
     echo ""
-    echo "$PROGNAME is a Nagios plugin to check the status of HDFS, Hadoop's"
+    echo "$PROGNAME is a Icinga plugin to check the status of HDFS, Hadoop's"
 	echo "underlying, redundant, distributed file system."
     echo ""
     echo "$PROGNAME -w 10 -c 5"
@@ -94,7 +94,7 @@ get_vals
 do_output
 do_perfdata
 
-# Nagios plugin data
+# Icinga plugin data
 if [ -n "$warning" -a -n "$critical" ] ; then
     if [ "$perc" -ge "$warning" -a "$perc" -lt "$critical" ] ; then
         echo "WARNING - ${output} | ${perfdata}"
