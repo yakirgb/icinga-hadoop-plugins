@@ -70,8 +70,7 @@ check_sanity() {
 }
 
 get_vals() {
-    
-    tmp_vals=`sudo su -c "hdfs dfsadmin -report" hdfs 2>/dev/null`
+    tmp_vals=`sudo /usr/local/bin/genhdfsreport.sh 2>/dev/null`
     dn_avail=`echo -e "$tmp_vals" | grep -m1 "Datanodes available:" | awk '{print $3}'`
     dn_total=`echo -e "$tmp_vals" | grep -m1 "Datanodes available:" | awk '{print $4}'`
     dn_total=`echo $dn_total | awk -F\( '{print $2}'`
