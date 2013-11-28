@@ -61,13 +61,16 @@ check_sanity() {
     if [ -n "$warning" -a -n "$critical" ]; then
         if [ ${warning} -gt ${critical} ]; then
             echo "ERR: Confusing warning and critical values" 
+            exit 2
         fi
 
         if [ ${warning} -gt 100 ] && [ ${critical} -gt 100 ]; then
             echo "ERR: Value above 100%? Rly?"
+            exit 3
         fi
     else
         echo "ERR: Missing value, see --help"
+        exit 1
     fi
 }
 

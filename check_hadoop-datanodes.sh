@@ -24,9 +24,9 @@ print_help() {
     echo ""
     echo "Options:"
 	echo "  -w|--warning)"
-	echo "     Defines the warning level for used space in percent"
+	echo "     Defines the warning level for available nodes"
 	echo "  -c|--critical)"
-	echo "     Defines the critical level for used space in percent"
+	echo "     Defines the critical level for available nodes"
     exit $ST_UK
 }
 
@@ -59,32 +59,32 @@ done
 
 check_sanity() {
     if [ -n "$warning" -a -n "$critical" ]; then
-        if [ ${warning} -gt ${critical} ]; then
+        if [ ${warning} -lt ${critical} ]; then
             echo "ERR: Confusing warning and critical values" 
-        fi
-
-        if [ ${warning} -gt 100 ] && [ ${critical} -gt 100 ]; then
-            echo "ERR: Value above 100%? Rly?"
+            exit 2
         fi
     else
         echo "ERR: Missing value, see --help"
+        exit 1
     fi
 }
 
 get_vals() {
-    tmp_vals=`hdfs dfsadmin -report 2>/dev/null`
-    dfs_used=`echo -e "$tmp_vals" | grep -m1 "DFS Used:" | awk '{printf "%.2f\n", $3/1024/1024/1024/1024}'`
-    dfs_used_p=`echo -e "$tmp_vals" | grep -m1 "DFS Used%:" | awk '{print $3}'`
-    dfs_total=`echo -e "$tmp_vals" | grep -m1 "Present Capacity:" | awk '{printf "%.2f\n", $3/1024/1024/1024/1024}'`
-    perc=`echo $dfs_used_p |awk -F. '{print $1}'`
+    
+    tmp_vals=`sudo su -c "hdfs dfsadmin -report" hdfs 2>/dev/null`
+    dn_avail=`echo -e "$tmp_vals" | grep -m1 "Datanodes available:" | awk '{print $3}'`
+    dn_total=`echo -e "$tmp_vals" | grep -m1 "Datanodes available:" | awk '{print $4}'`
+    dn_total=`echo $dn_total | awk -F\( '{print $2}'`
+    dn_dead=`echo -e "$tmp_vals" | grep -m1 "Datanodes available:" | awk '{print $6}'`
+
 }
 
 do_output() {
-	output="DFS total: ${dfs_total} TB, DFS used: ${dfs_used} TB (${dfs_used_p})"
+	output="Nodes available: ${dn_avail}, Nodes total: ${dn_total}, Nodes dead: ${dn_dead}"
 }
 
 do_perfdata() {
-	perfdata="'dfs_total'=${dfs_total} 'dfs_used'=${dfs_used}"
+	perfdata="'dn_avail'=${dn_avail} 'dn_total'=${dn_total} 'dn_dead'=${dn_dead}"
 }
 
 # Runtime
@@ -94,12 +94,12 @@ get_vals
 do_output
 do_perfdata
 
-# Icinga plugin data
+# Nagios plugin data
 if [ -n "$warning" -a -n "$critical" ] ; then
-    if [ "$perc" -ge "$warning" -a "$perc" -lt "$critical" ] ; then
+    if [ "$dn_avail" -le "$warning" -a "$dn_avail" -gt "$critical" ] ; then
         echo "WARNING - ${output} | ${perfdata}"
 	exit $ST_WR
-    elif [ "$perc" -ge "$critical" ]; then
+    elif [ "$dn_avail" -le "$critical" ]; then
         echo "CRITICAL - ${output} | ${perfdata}"
 	exit $ST_CR
     else
