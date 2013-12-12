@@ -61,11 +61,16 @@ check_sanity() {
     if [ -n "$warning" -a -n "$critical" ]; then
         if [ ${warning} -lt ${critical} ]; then
             echo "ERR: Confusing warning and critical values" 
-            exit 2
+            exit $ST_UK
         fi
     else
         echo "ERR: Missing value, see --help"
-        exit 1
+        exit $ST_UK
+    fi
+
+    if [ ! -x "$(which hdfs)" ]; then
+        echo "ERR: hdfs not installed"
+        exit $ST_UK
     fi
 }
 
